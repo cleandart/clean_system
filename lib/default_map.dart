@@ -2,7 +2,7 @@ part of system;
 
 typedef V MapGenerator<K,V>(K);
 
-class DefaultMap<K,V> implements Map{
+class DefaultMap<K,V> {
   
   final MapGenerator<K,V> _generator;
   final Map<K,V> _data;
@@ -12,15 +12,10 @@ class DefaultMap<K,V> implements Map{
   DefaultMap.from(Map<K,V> source, this._generator):
     this._data = new Map.from(source);
   
-  V operator[](K key){
-    if(!_data.containsKey(key)){
-      _data[key] = _generator(key);
-    }
-    return _data[key];
+  V operator[](K key) {
+    return _data.putIfAbsent(key, () => _generator(key));
   }
-  
-  operator[]=(K key, V value) => _data[key] = value;
-  
+    
   Iterable<V> get values => _data.values;
     
   Iterable<K> get keys => _data.keys;
@@ -35,18 +30,18 @@ class DefaultMap<K,V> implements Map{
   
   int get length => _data.length;
   
-  void addAll(Map<K,V> other) => _data.addAll(other);
-    
-  V remove(Object key) => _data.remove(key);
+  void forEach(f) => _data.forEach(f);  
   
-  void clear() => _data.clear();
+}
+
+class CallbackDefaultMap<K,V> extends DefaultMap<K,V>{
   
-  void forEach(f) => _data.forEach(f);
+  final _callback;
   
-  V putIfAbsent(K key, ifAbsent) => _data.putIfAbsent(key, ifAbsent);
-  
-  
-  
-  
-  
+  CallbackDefaultMap(_generator, this._callback): super(_generator);
+ 
+  V operator[](K key) {
+    _callback(key);
+    return super[key];
+  }
 }

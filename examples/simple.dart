@@ -28,5 +28,6 @@ var init = {
 
 void main(){
   var s = new System(init);
-  s.init();
+  s.init().then((_) => print(s.graphDOT()));
+  
 }

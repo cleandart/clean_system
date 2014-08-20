@@ -1,79 +1,109 @@
 library system;
 
 import "dart:async";
+import "dart:collection";
 
 part "default_map.dart";
 
-class CyclicDependenciesError extends Error{
-  final Set cycle;
+class CyclicDependenciesError extends Error {
+  final Iterable path;
   
-  CyclicDependenciesError(this.cycle);
+  CyclicDependenciesError(this.path);
   
-  String toString() => "Dependency cycle: $cycle";
+  String toString() => "Dependency cycle: ${path.join("->")}";
 }
 
-class NoSuchTaskError extends Error{
-  final String task;
+class NoSuchModuleError extends Error {
+  final Iterable<String> path;
   
-  NoSuchTaskError(this.task);
+  NoSuchModuleError(this.path);
   
-  String toString() => "No such task: $task";
+  String toString() =>
+      "No such module: '${path.last}' that is required by ${path.join("->")}";
 }
 
-class System{
+class System {
   
-  DefaultMap<String,dynamic> tasks;
-  final List _init_order = [];
+  DefaultMap<String, dynamic> _modules;
   
-  System(Map<String,dynamic> _init_data){
-    _init(_init_data);
+  final List _initOrder = [];
+  
+  final Set _path = new LinkedHashSet();
+  
+  final Map<String, dynamic> _initData;
+  
+  final DefaultMap<String, List<String>> _graph = new DefaultMap((_)=>[]);
+  
+  System(this._initData) {
+    _modules =
+        new CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
+    for (var k in _initData.keys) _modules[k];
   }
   
+  _graphUpdater(name){
+    if(_path.isNotEmpty){
+      _graph[_path.last].add(name);
+    } 
+  }
   
-  _init(data){
-    Set active = new Set();
-        
-    generator(String name){
+  _pathUpdater(fn(String name)) {
+    return (String name) {
       
-      if(active.contains(name))
-        throw new CyclicDependenciesError(active);
-        
-      active.add(name);
+      if(!_initData.containsKey(name))
+        throw new NoSuchModuleError(new List.from(_path)..add(name));
       
-      if(!data.containsKey(name))
-        throw new NoSuchTaskError(name);
+      if(_path.contains(name))
+        throw new CyclicDependenciesError(new List.from(_path)..add(name));
       
-      var res = data[name](this._actualTasks());
-      _init_order.add(res);
-      
-      active.remove(name);
+      _path.add(name);
+      var res = fn(name);
+      _path.remove(name);
       
       return res;
-    }
-    
-    tasks = new DefaultMap(generator);
-    
-    for(String key in data.keys){
-      tasks[key];
-    }
+    };
   }
   
-  
-  _actualTasks() => tasks;
-  
+  _createModule(String name) {
+    
+    var res = _initData[name](_modules);
+    
+    _initOrder.add(res);
+    
+    return res;
+  }  
   
   Future<List> init() =>
-      _init_order.fold(
-        new Future.value(null),
-        (Future soFar, service) =>
-          soFar.then((_){
-            try{
-              service.init;
-            } catch(e) {
-              return new Future.value(null);
-            }
-            return new Future.value(service.init());
-          })   
-      ).then((_)=>null);
-
+    Future.forEach(_initOrder, (m) {
+      try{
+        return new Future.value(m.init());
+      } on NoSuchMethodError catch(e){
+        return new Future.value(null);
+      }
+    });
+    
+  Future<List> dispose() =>
+    Future.forEach(_initOrder.reversed, (m) {
+      try{
+        return new Future.value(m.dispose());
+      } on NoSuchMethodError catch(e){
+        return new Future.value(null);
+      }
+    });
+  
+  String graphDOT(){
+    
+    List lines = [];
+    lines.add("digraph dependencies {");
+    
+    for (String module in _initData.keys)
+      lines.add("  $module;");
+    
+    for (String from in _graph.keys)
+      for (String to in _graph[from])
+        lines.add("  $from -> $to;");
+    
+    lines.add("}");
+    lines.add("");
+    return lines.join("\n");  
+  }
 }
