@@ -2,37 +2,78 @@ library system;
 
 import "dart:async";
 
-part "lazy_map.dart";
+part "default_map.dart";
 
+class CyclicDependenciesError extends Error{
+  final Set cycle;
+  
+  CyclicDependenciesError(this.cycle);
+  
+  String toString() => "Dependency cycle: $cycle";
+}
+
+class NoSuchTaskError extends Error{
+  final String task;
+  
+  NoSuchTaskError(this.task);
+  
+  String toString() => "No such task: $task";
+}
 
 class System{
   
-  LazyMap<String,dynamic> parts;
+  DefaultMap<String,dynamic> tasks;
   final List _init_order = [];
   
   System(Map<String,dynamic> _init_data){
-    
+    _init(_init_data);
+  }
+  
+  
+  _init(data){
+    Set active = new Set();
+        
     generator(String name){
-      var res = _init_data[name](this._getParts());
+      
+      if(active.contains(name))
+        throw new CyclicDependenciesError(active);
+        
+      active.add(name);
+      
+      if(!data.containsKey(name))
+        throw new NoSuchTaskError(name);
+      
+      var res = data[name](this._actualTasks());
       _init_order.add(res);
+      
+      active.remove(name);
+      
       return res;
     }
     
-    parts = new LazyMap(generator);
+    tasks = new DefaultMap(generator);
     
-    for(String key in _init_data.keys){
-      parts[key];
+    for(String key in data.keys){
+      tasks[key];
     }
   }
   
-  _getParts() => parts;
+  
+  _actualTasks() => tasks;
+  
   
   Future<List> init() =>
       _init_order.fold(
         new Future.value(null),
         (Future soFar, service) =>
-          soFar.then((_) => new Future.value(service.init()))
-        
+          soFar.then((_){
+            try{
+              service.init;
+            } catch(e) {
+              return new Future.value(null);
+            }
+            return new Future.value(service.init());
+          })   
       ).then((_)=>null);
 
 }

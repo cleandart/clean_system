@@ -23,6 +23,7 @@ var init = {
   "B": (S) => new Cls("B",S["D"]),
   "C": (S) => new Cls("C",S["D"]),
   "D": (S) => new Cls("D",""),
+  "pure": (S) => "pure",
 };
 
 void main(){
