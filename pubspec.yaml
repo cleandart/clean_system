@@ -1,0 +1,5 @@
+name: clean_system
+version: 0.1.0
+author: Clean Team <clean@vacuumlabs.com>
+description: Simple dependency handling
+homepage: https://github.com/cleandart/clean_system
