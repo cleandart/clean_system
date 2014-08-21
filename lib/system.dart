@@ -6,7 +6,7 @@ import "dart:collection";
 part "default_map.dart";
 
 class CyclicDependenciesError extends Error {
-  final Iterable path;
+  final Iterable<String> path;
   
   CyclicDependenciesError(this.path);
   
@@ -24,19 +24,19 @@ class NoSuchModuleError extends Error {
 
 class System {
   
-  DefaultMap<String, dynamic> _modules;
+  _DefaultMap<String, dynamic> _modules;
   
   final List _initOrder = [];
   
   final Set _path = new LinkedHashSet();
   
-  final Map<String, dynamic> _initData;
+  final Map<String, Function> _initData;
   
-  final DefaultMap<String, List<String>> _graph = new DefaultMap((_)=>[]);
+  final _DefaultMap<String, List<String>> _graph = new _DefaultMap((_)=>[]);
   
   System(this._initData) {
     _modules =
-        new CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
+        new _CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
     for (var k in _initData.keys) _modules[k];
   }
   
@@ -72,23 +72,23 @@ class System {
     return res;
   }  
   
-  Future<List> init() =>
-    Future.forEach(_initOrder, (m) {
+  Future init() =>
+    Future.forEach(_initOrder, (m) => new Future.sync((){
       try{
-        return new Future.value(m.init());
+        return m.init();
       } on NoSuchMethodError catch(e){
-        return new Future.value(null);
-      }
-    });
+        return null;
+      }    
+    }));
     
-  Future<List> dispose() =>
-    Future.forEach(_initOrder.reversed, (m) {
+  Future dispose() =>
+    Future.forEach(_initOrder.reversed, (m) => new Future.sync((){
       try{
-        return new Future.value(m.dispose());
+        return m.dispose();
       } on NoSuchMethodError catch(e){
-        return new Future.value(null);
-      }
-    });
+        return null;
+      }    
+    }));
   
   String graphDOT(){
     
