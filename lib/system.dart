@@ -3,7 +3,7 @@ library system;
 import "dart:async";
 import "dart:collection";
 
-part "module.dart";
+part "module_wrapper.dart";
 part "default_map.dart";
 
 class CyclicDependenciesError extends Error {
