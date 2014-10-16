@@ -43,12 +43,14 @@ disposeF(m) {
 var init = {
   "A": (s) => new Cls("A", s["B"]),
   "B": {#create: (s) => createF("B", s["D"]), #init: initF, #dispose: disposeF},
-  "C": (s) => new Cls("C", s["D"]),
-  "D": (s) => new Cls("D", ""),
+  "C": {#create: (s) => createF("C", s["D"]), #init: initF},
+  "D": {#create: (s) => createF("D", ""), #dispose: disposeF},
   "pure": (s) => "pure"
 };
 
 void main(){
   var s = new System(init);
-  s.init().then((_) => print(s.graphDOT()));
+  s.init()
+    .then((_) => print(s.graphDOT()))
+    .then((_) => s.dispose());
 }

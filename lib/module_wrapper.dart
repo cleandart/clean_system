@@ -1,80 +1,82 @@
 part of system;
 
-class _ModuleWrapper {
+abstract class _ModuleWrapper {
 
-  factory _ModuleWrapper(dynamic param) {
+  static wrap(dynamic param) {
     if (param is Function) {
-      return new _ModuleWrapper.fromFunction(param);
+      return new _ModuleFunctionWrapper(param);
     } else if (param is Map) {
-      return new _ModuleWrapper.fromMap(param);
+      return new _ModuleMapWrapper(param);
     } else {
       throw new ArgumentError("Module can only be created from Map or Function");
     }
   }
 
-  _ModuleWrapper.fromFunction(dynamic f(s)) {
-    var m;
+  dynamic create(s);
 
-    _create = (s) {
-      m = f(s);
-      return m;
-    };
+  dynamic init();
 
-    _init = () {
-      try{
-        return m.init();
-      } on NoSuchMethodError catch(e) {
-        return null;
-      }
-    };
+  dynamic dispose();
 
-    _dispose = () {
-      try{
-        return m.dispose();
-      } on NoSuchMethodError catch(e) {
-        return null;
-      }
-      finally {
-        m = null;
-      }
-    };
-  }
+}
 
-  _ModuleWrapper.fromMap(Map map) {
-    var m;
+class _ModuleFunctionWrapper extends _ModuleWrapper {
 
-    _create = (s) {
-      m = map[#create](s);
-      return m;
-    };
+  var _m;
+  dynamic _create;
 
-    _init = () {
-      return map[#init](m);
-    };
-
-    _dispose = () {
-      var result = map[#dispose](m);
-      m = null;
-      return result;
-    };
-  }
-
-  Function _create;
+  _ModuleFunctionWrapper(this._create(s));
 
   dynamic create(s) {
-    return _create(s);
+    _m = _create(s);
+    return _m;
   }
-
-  Function _init;
 
   dynamic init() {
-    return _init();
+    try{
+      return _m.init();
+    } on NoSuchMethodError catch(e) {
+      return null;
+    }
   }
 
-  Function _dispose;
-
   dynamic dispose() {
-    return _dispose();
+    try{
+      return _m.dispose();
+    } on NoSuchMethodError catch(e) {
+      return null;
+    }
+    finally {
+      _m = null;
+    }
   }
 
 }
+
+class _ModuleMapWrapper extends _ModuleFunctionWrapper {
+  Map _map;
+
+  _ModuleMapWrapper(Map map): super(map[#create]) {
+    _map = map;
+  }
+
+  @override
+  dynamic init() {
+    if (_map.containsKey(#init)) {
+      return _map[#init](super._m);
+    } else {
+      return super.init();
+    }
+  }
+
+  @override
+  dynamic dispose() {
+    if (_map.containsKey(#dispose)) {
+      return _map[#dispose](super._m);
+    } else {
+      return super.dispose();
+    }
+  }
+
+}
+

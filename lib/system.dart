@@ -36,7 +36,7 @@ class System {
   final _DefaultMap<String, List<String>> _graph = new _DefaultMap((_)=>[]);
 
   System(Map<String, dynamic> initData) {
-    _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => new _ModuleWrapper(initData[key]));
+    _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => _ModuleWrapper.wrap(initData[key]));
     _modules =
         new _CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
     for (var k in _moduleWrappers.keys) _modules[k];
