@@ -1,82 +1,54 @@
 part of system;
 
-abstract class _ModuleWrapper {
+class _ModuleWrapper {
 
-  static wrap(dynamic param) {
+  static Map _defaultMethods = {
+    #init: (m) {
+      try{
+        return m.init();
+      } on NoSuchMethodError catch(e) {
+        return null;
+      }
+    },
+    #dispose: (m) {
+      try{
+        return m.dispose();
+      } on NoSuchMethodError catch(e) {
+        return null;
+      }
+    }
+  };
+
+  factory _ModuleWrapper(dynamic param) {
     if (param is Function) {
-      return new _ModuleFunctionWrapper(param);
+      return new _ModuleWrapper({#create: param});
     } else if (param is Map) {
-      return new _ModuleMapWrapper(param);
+      var methods = {};
+      for (var m in [#create, #init, #dispose]) {
+        methods[m] = param.containsKey(m) ? param[m] : _defaultMethods[m];
+      }
+      return new _ModuleWrapper._withMethods(methods);
     } else {
       throw new ArgumentError("Module can only be created from Map or Function");
     }
   }
 
-  dynamic create(s);
+  _ModuleWrapper._withMethods(this._methods);
 
-  dynamic init();
-
-  dynamic dispose();
-
-}
-
-class _ModuleFunctionWrapper extends _ModuleWrapper {
-
+  Map _methods;
   var _m;
-  dynamic _create;
 
-  _ModuleFunctionWrapper(this._create(s));
-
-  dynamic create(s) {
-    _m = _create(s);
+  create(s) {
+    _m = _methods[#create](s);
     return _m;
   }
 
-  dynamic init() {
-    try{
-      return _m.init();
-    } on NoSuchMethodError catch(e) {
-      return null;
-    }
+  init() {
+    return _methods[#init](_m);
   }
 
-  dynamic dispose() {
-    try{
-      return _m.dispose();
-    } on NoSuchMethodError catch(e) {
-      return null;
-    }
-    finally {
-      _m = null;
-    }
+  dispose() {
+    return _methods[#dispose](_m);
   }
 
 }
-
-class _ModuleMapWrapper extends _ModuleFunctionWrapper {
-  Map _map;
-
-  _ModuleMapWrapper(Map map): super(map[#create]) {
-    _map = map;
-  }
-
-  @override
-  dynamic init() {
-    if (_map.containsKey(#init)) {
-      return _map[#init](super._m);
-    } else {
-      return super.init();
-    }
-  }
-
-  @override
-  dynamic dispose() {
-    if (_map.containsKey(#dispose)) {
-      return _map[#dispose](super._m);
-    } else {
-      return super.dispose();
-    }
-  }
-
-}
-
