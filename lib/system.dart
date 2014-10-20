@@ -3,6 +3,7 @@ library system;
 import "dart:async";
 import "dart:collection";
 
+part "module_wrapper.dart";
 part "default_map.dart";
 
 class CyclicDependenciesError extends Error {
@@ -26,18 +27,19 @@ class System {
 
   _DefaultMap<String, dynamic> _modules;
 
-  final List _initOrder = [];
+  final List<_ModuleWrapper> _initOrder = [];
 
   final Set _path = new LinkedHashSet();
 
-  final Map<String, Function> _initData;
+  Map<String, _ModuleWrapper> _moduleWrappers;
 
   final _DefaultMap<String, List<String>> _graph = new _DefaultMap((_)=>[]);
 
-  System(this._initData) {
+  System(Map<String, dynamic> initData) {
+    _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => new _ModuleWrapper(initData[key]));
     _modules =
         new _CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
-    for (var k in _initData.keys) _modules[k];
+    for (var k in _moduleWrappers.keys) _modules[k];
   }
 
   _graphUpdater(name){
@@ -49,7 +51,7 @@ class System {
   _pathUpdater(fn(String name)) {
     return (String name) {
 
-      if(!_initData.containsKey(name))
+      if(!_moduleWrappers.containsKey(name))
         throw new NoSuchModuleError(new List.from(_path)..add(name));
 
       if(_path.contains(name))
@@ -64,30 +66,20 @@ class System {
   }
 
   _createModule(String name) {
+    _ModuleWrapper module = _moduleWrappers[name];
+    _initOrder.add(module);
 
-    var res = _initData[name](_modules);
-
-    _initOrder.add(res);
-
-    return res;
+    return module.create(_modules);
   }
 
   Future init() =>
     Future.forEach(_initOrder, (m) => new Future.sync((){
-      try{
-        return m.init();
-      } on NoSuchMethodError catch(e){
-        return null;
-      }
+      return m.init();
     }));
 
   Future dispose() =>
     Future.forEach(_initOrder.reversed, (m) => new Future.sync((){
-      try{
-        return m.dispose();
-      } on NoSuchMethodError catch(e){
-        return null;
-      }
+      return m.dispose();
     }));
 
   String graphDOT(){
@@ -96,7 +88,7 @@ class System {
     lines.add("digraph dependencies {");
     lines.add("  rankdir=LR;");
 
-    for (String module in _initData.keys)
+    for (String module in _moduleWrappers.keys)
       lines.add("  $module;");
 
     for (String from in _graph.keys)

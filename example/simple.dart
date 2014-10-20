@@ -2,19 +2,19 @@ import "dart:async";
 import "package:clean_system/system.dart";
 
 class Cls {
-  
+
   final data;
   final name;
-  
+
   Cls(this.name, this.data){
     print("Construction $this");
   }
-  
+
   init(){
     print("Initialization $this");
-    new Future.value(47);
+    return new Future.value(47);
   }
-  
+
   String toString() => "$name<$data>";
 }
 
@@ -29,5 +29,5 @@ var init = {
 void main(){
   var s = new System(init);
   s.init().then((_) => print(s.graphDOT()));
-  
+
 }
