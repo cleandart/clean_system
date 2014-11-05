@@ -36,7 +36,7 @@ class System {
   final _DefaultMap<String, List<String>> _graph = new _DefaultMap((_)=>[]);
 
   System(Map<String, dynamic> initData) {
-    _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => new _ModuleWrapper(initData[key]));
+    _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => new _ModuleWrapper(initData[key], key));
     _modules =
         new _CallbackDefaultMap(_pathUpdater(_createModule), _graphUpdater);
     for (var k in _moduleWrappers.keys) _modules[k];
@@ -67,9 +67,9 @@ class System {
 
   _createModule(String name) {
     _ModuleWrapper module = _moduleWrappers[name];
+     var res = module.create(_modules);
     _initOrder.add(module);
-
-    return module.create(_modules);
+    return res;
   }
 
   Future init() =>
@@ -81,6 +81,12 @@ class System {
     Future.forEach(_initOrder.reversed, (m) => new Future.sync((){
       return m.dispose();
     }));
+
+  operator[](val) =>
+    (_moduleWrappers.containsKey(val))?
+        _moduleWrappers[val].getInnerModule()
+      :
+        throw new NoSuchModuleError([val]);
 
   String graphDOT(){
 
