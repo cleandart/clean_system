@@ -7,6 +7,7 @@ var init = {
   "D": (S) => [S["A"]],
 };
 
+// shoud throw CyclicDependenciesError
 void main(){
   var s = new System(init);
   s.init();

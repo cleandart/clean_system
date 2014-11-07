@@ -7,6 +7,7 @@ var init = {
   "D": (S) => [S["E"]],
 };
 
+// shoud throw NoSuchModuleError
 void main(){
   var s = new System(init);
   s.init();

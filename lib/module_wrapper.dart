@@ -19,21 +19,23 @@ class _ModuleWrapper {
     }
   };
 
-  factory _ModuleWrapper(dynamic param) {
+
+  factory _ModuleWrapper(dynamic param, String key) {
     if (param is Function) {
-      return new _ModuleWrapper({#create: param});
+      return new _ModuleWrapper({#create: param}, key);
     } else if (param is Map) {
       var methods = {};
       for (var m in [#create, #init, #dispose]) {
         methods[m] = param.containsKey(m) ? param[m] : _defaultMethods[m];
       }
-      return new _ModuleWrapper._withMethods(methods);
+      return new _ModuleWrapper._withMethods(methods, key);
     } else {
       throw new ArgumentError("Module can only be created from Map or Function");
     }
   }
 
-  _ModuleWrapper._withMethods(this._methods);
+  final key;
+  _ModuleWrapper._withMethods(this._methods, this.key);
 
   Map _methods;
   var _m;
@@ -50,5 +52,7 @@ class _ModuleWrapper {
   dispose() {
     return _methods[#dispose](_m);
   }
+
+  getInnerModule() => _m;
 
 }
