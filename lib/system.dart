@@ -6,6 +6,10 @@ import "dart:collection";
 part "module_wrapper.dart";
 part "default_map.dart";
 
+
+/**
+ * Error thrown when there are cyclic dependencies
+ */
 class CyclicDependenciesError extends Error {
   final Iterable<String> path;
 
@@ -14,6 +18,9 @@ class CyclicDependenciesError extends Error {
   String toString() => "Dependency cycle: ${path.join("->")}";
 }
 
+/**
+ * Error thrown if the requested module was not defined in System
+ */
 class NoSuchModuleError extends Error {
   final Iterable<String> path;
 
@@ -23,6 +30,26 @@ class NoSuchModuleError extends Error {
       "No such module: '${path.last}' that is required by ${path.join("->")}";
 }
 
+
+/**
+ * This class meant for convenient module handling. System is initialized with
+ * a Map, where keys are identifiers of modules and values are Maps with following keys: #create, #init, #dispose.
+ * Entry under #create should be a function, which takes the System Map as an argument.
+ * Therefore, the module can be constructed using other modules in the System Map by simply
+ * referencing to them. Values under keys #init and #dispose should be functions taking
+ * the constructed module as an argument, and specifying how to init or dispose them.
+ *
+ * If the value under some key in System Map is not a Map, it is handled as value for #create,
+ * and default #init and #dispose, calling .init() or .dispose() respectively, are added.
+ *
+ * Upon constructing the System, it creates all the given modules and determines the
+ * right order for initializing them. System ensures, that every module is initialized
+ * only after all modules it depends on are initialized. As for dispose, every module
+ * is disposed only after all modules it depends on are disposed.
+ *
+ * Init / dispose of System initializes/disposes all modules.
+ * Once the System is created, all modules can be referenced by key as from a common Map.
+ */
 class System {
 
   _DefaultMap<String, dynamic> _modules;
@@ -35,6 +62,12 @@ class System {
 
   final _DefaultMap<String, List<String>> _graph = new _DefaultMap((_)=>[]);
 
+  /**
+   * Constructs the System from a Map [initData] of String identifiers of modules as keys and Map
+   * specifying how to create/init/dispose the module as a value.
+   * [initData] should contain the entries as specified in the documentation of System class.
+   * Constructs all given modules.
+   */
   System(Map<String, dynamic> initData) {
     _moduleWrappers = new Map.fromIterable(initData.keys, value: (key) => new _ModuleWrapper(initData[key], key));
     _modules =
@@ -72,22 +105,26 @@ class System {
     return res;
   }
 
+  /// Initialize all modules in the right order
   Future init() =>
     Future.forEach(_initOrder, (m) => new Future.sync((){
       return m.init();
     }));
 
+  /// Dispose all modules in the right order (reversed to initialization)
   Future dispose() =>
     Future.forEach(_initOrder.reversed, (m) => new Future.sync((){
       return m.dispose();
     }));
 
+  /// Get module under given key
   operator[](val) =>
     (_moduleWrappers.containsKey(val))?
         _moduleWrappers[val].getInnerModule()
       :
         throw new NoSuchModuleError([val]);
 
+  /// Draw an oriented graph of dependencies
   String graphDOT(){
 
     List lines = [];
