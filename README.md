@@ -12,15 +12,15 @@ you can access the modules just as simply as in a common Map.
 
 ### More specific talking
 The Map for creation of System should have the following structure: every key in Map should be 
-a String, identifying the module, and the value should be a Map with keys: #create, #init, #dispose.
-Under each key in this Map, there should be a function - under #create there should be a function
-taking this System as an argument - this way you may reference to other modules in the System - and return
+a String, identifying the module, and the value should be a Map with keys: #create, #init, #dispose,
+where #init and #dispose are optional. Under each key in this Map, there should be a function - under #create there should be a function
+taking this System Map as an argument - this way you may reference to other modules in the System - and return
 the constructed module. Under keys #dispose and #init, there should be function taking the constructed
-module as an argument, which dispose or init the module. On the other hand, you don't always need to initialize
-or dispose the module, or your module would just call myModule.init() / myModule.dispose(), so for 
-more convenience, if you don't have to pass a Map of #create/#dispose/#init, but you may as well only pass
-the function which would have been under #create key. Then, System will try to call .init() or .dispose() 
-on the modules if possible.
+module as an argument, which dispose or init the module.
+
+If you don't specify #init or #dispose, the System will try to call .init() (or .dispose() ) on the module.
+For more convenience, if you only want to specify the #create, you don't have to pass the whole Map with only the one 
+entry, but just the value, which would have been under key #create.
 
 ### Example
 
@@ -29,13 +29,13 @@ on the modules if possible.
      
      System mySystem = new System({
        'module1' : {
-           #create: (System s) => new ModuleFirst(config, someVariable)
+           #create: (s) => new ModuleFirst(config, someVariable)
            #init:  (ModuleFirst m) => m.initializeMe()
            #dispose: (ModuleFirst m) => m.disposeMe()
          },
-       'module3' : (System s) => new Module3(s['module2'], s['module1'], config)  // uses default .init() and .dispose()
+       'module3' : (s) => new Module3(s['module2'], s['module1'], config)  // uses default .init() and .dispose()
        'module2' : {
-           #create: (System s) => new Module2(s['module1']),
+           #create: (s) => new Module2(s['module1']),
            #init: (Module2 m) => m.init(),
            #dispose: (Module2 m) => m.dispose(), // Init and dispose are now redundant, same would be used 
          },
