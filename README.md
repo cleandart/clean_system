@@ -1,9 +1,6 @@
 # Library for convenient handling of modules
 
 ## Motivation
-
-Inspired by System in https://github.com/stuartsierra/component
-
 ### Dependencies in modules can get messy
 Imagine you have 30 modules, some of them are dependent on other modules,
 and you have to determine the right order of initializing/disposing them... Now this
@@ -72,4 +69,4 @@ entry, but just the value, which would have been under key #create.
         // All modules are now disposed
      }); 
 
-
+Inspired by System in https://github.com/stuartsierra/component
