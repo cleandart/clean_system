@@ -1,8 +1,8 @@
 # Library for convenient handling of modules
 
-Inspired by System in https://github.com/stuartsierra/component
-
 ## Motivation
+
+Inspired by System in https://github.com/stuartsierra/component
 
 ### Dependencies in modules can get messy
 Imagine you have 30 modules, some of them are dependent on other modules,
