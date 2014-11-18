@@ -1,5 +1,24 @@
 # Library for convenient handling of modules
 
+Inspired by System in https://github.com/stuartsierra/component
+
+## Motivation
+
+### Dependencies in modules can get messy
+Imagine you have 30 modules, some of them are dependent on other modules,
+and you have to determine the right order of initializing/disposing them... Now this
+may not be a simple task sometimes - why not automatize it? System automatically
+determines the correct order of initialization/dipose.
+
+### Easy to use, nice code
+Having the System, you can reference particular modules as simple as in a Map.
+You can even easily use different System-s (with some changed config for example) 
+in different places, and it wouldn't be much of a boilerplate code (e.g. you may
+have some Maps (parts of System), for specific types of modules referencing
+to each other and to some one config out of the Map, and you have some Systems with
+some different configs - by adding these maps to those Systems, you may initialize
+the added parts of System differently)
+
 ## What does it provide ?
 
 ### General idea
@@ -53,19 +72,4 @@ entry, but just the value, which would have been under key #create.
         // All modules are now disposed
      }); 
 
-## Motivation
 
-### Dependencies in modules can get messy
-Imagine you have 30 modules, some of them are dependent on other modules,
-and you have to determine the right order of initializing/disposing them... Now this
-may not be a simple task sometimes - why not automatize it? System automatically
-determines the correct order of initialization/dipose.
-
-### Easy to use, nice code
-Having the System, you can reference particular modules as simple as in a Map.
-You can even easily use different System-s (with some changed config for example) 
-in different places, and it wouldn't be much of a boilerplate code (e.g. you may
-have some Maps (parts of System), for specific types of modules referencing
-to each other and to some one config out of the Map, and you have some Systems with
-some different configs - by adding these maps to those Systems, you may initialize
-the added parts of System differently)
