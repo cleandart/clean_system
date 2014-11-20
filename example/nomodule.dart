@@ -10,5 +10,4 @@ var init = {
 // shoud throw NoSuchModuleError
 void main(){
   var s = new System(init);
-  s.init();
 }
